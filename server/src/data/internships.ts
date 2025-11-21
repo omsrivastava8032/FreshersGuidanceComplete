@@ -1,0 +1,52 @@
+const internships = [
+    {
+        company: "TechFlow",
+        position: "Frontend Developer Intern",
+        location: "Remote",
+        type: "Part-time",
+        tags: ["React", "JavaScript", "UI/UX"],
+        deadline: new Date("2025-08-15"),
+        logo: "T",
+        description: "Work on cutting-edge web applications using modern frontend technologies. Collaborate with our engineering team to implement responsive user interfaces and optimize web performance.",
+        duration: "3 months",
+        stipend: "$3,000/month",
+    },
+    {
+        company: "DataViz Inc.",
+        position: "Data Science Intern",
+        location: "New York, NY",
+        type: "Full-time",
+        tags: ["Python", "Machine Learning", "SQL"],
+        deadline: new Date("2025-08-20"),
+        logo: "D",
+        description: "Analyze large datasets and build predictive models. Work closely with our data engineering team to clean, process, and visualize data insights.",
+        duration: "6 months",
+        stipend: "$4,500/month",
+    },
+    {
+        company: "CloudFusion",
+        position: "Full Stack Developer Intern",
+        location: "San Francisco, CA",
+        type: "Full-time",
+        tags: ["JavaScript", "Node.js", "React"],
+        deadline: new Date("2025-08-25"),
+        logo: "C",
+        description: "Develop end-to-end features for our cloud management platform. Participate in all phases of the software development lifecycle.",
+        duration: "4 months",
+        stipend: "$5,000/month",
+    },
+    {
+        company: "MobileFirst",
+        position: "Mobile App Developer Intern",
+        location: "Remote",
+        type: "Part-time",
+        tags: ["React Native", "iOS", "Android"],
+        deadline: new Date("2025-08-30"),
+        logo: "M",
+        description: "Build cross-platform mobile applications with modern tools. Implement new features and optimize existing functionality.",
+        duration: "3 months",
+        stipend: "$2,500/month",
+    }
+];
+
+export default internships;

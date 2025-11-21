@@ -1,142 +1,340 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import api from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+
+interface Internship {
+  _id: string;
+  company: string;
+  position: string;
+  location: string;
+  type: string;
+  tags: string[];
+  deadline: string;
+  logo: string;
+  description: string;
+  duration: string;
+  stipend: string;
+  postedAt: string;
+  applicants: string[];
+}
 
 const Internships = () => {
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState("recommended");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("all");
+  const [selectedInternship, setSelectedInternship] = useState<Internship | null>(null);
+  const [internships, setInternships] = useState<Internship[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [applying, setApplying] = useState(false);
+
+  // Load saved internships from localStorage
+  const [savedInternships, setSavedInternships] = useState<string[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('savedInternships');
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    fetchInternships();
+  }, []);
+
+  const fetchInternships = async () => {
+    try {
+      const { data } = await api.get('/internships');
+      setInternships(data);
+    } catch (error) {
+      console.error("Failed to fetch internships", error);
+      toast.error("Failed to load internships");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Save to localStorage when state changes
+  useEffect(() => {
+    localStorage.setItem('savedInternships', JSON.stringify(savedInternships));
+  }, [savedInternships]);
+
+  const handleSave = (id: string) => {
+    setSavedInternships(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+    toast.success(savedInternships.includes(id) ? "Internship removed from saved" : "Internship saved");
+  };
+
+  const handleApply = async (id: string) => {
+    if (!user) return;
+    setApplying(true);
+    try {
+      await api.post(`/internships/${id}/apply`);
+      toast.success("Application submitted successfully!");
+
+      // Update local state
+      setInternships(prev => prev.map(internship => {
+        if (internship._id === id) {
+          return { ...internship, applicants: [...internship.applicants, user._id] };
+        }
+        return internship;
+      }));
+
+      if (selectedInternship && selectedInternship._id === id) {
+        setSelectedInternship(prev => prev ? { ...prev, applicants: [...prev.applicants, user._id] } : null);
+      }
+    } catch (error: any) {
+      console.error("Failed to apply", error);
+      toast.error(error.response?.data?.message || "Failed to apply for internship");
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const filteredInternships = internships.filter(internship => {
+    const matchesSearch = internship.position.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      internship.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      internship.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const matchesLocation = selectedLocation === "all" ||
+      internship.location.toLowerCase() === selectedLocation.toLowerCase();
+
+    return matchesSearch && matchesLocation;
+  });
+
+  const getTabContent = (tab: string) => {
+    switch (tab) {
+      case "recommended":
+        return filteredInternships;
+      case "new":
+        // Filter for internships posted in the last 7 days
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+        return internships.filter(i => new Date(i.postedAt) > oneWeekAgo);
+      case "applied":
+        return internships.filter(i => user && i.applicants.includes(user._id));
+      case "saved":
+        return internships.filter(i => savedInternships.includes(i._id));
+      default:
+        return [];
+    }
+  };
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-96"><Loader2 className="w-8 h-8 animate-spin" /></div>;
+  }
+
   return (
-    <div className="container mx-auto py-8">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Internship Opportunities</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Internship Opportunities</h1>
           <p className="text-muted-foreground mt-2">Curated internships to kickstart your career</p>
         </div>
         <Badge variant="outline" className="px-3 py-1">Premium Feature</Badge>
       </div>
-      
-      <Tabs defaultValue="recommended" className="mb-8">
-        <TabsList>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+        <Input
+          placeholder="Search internships..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="lg:col-span-2"
+        />
+        <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+          <SelectTrigger>
+            <SelectValue placeholder="Select location" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Locations</SelectItem>
+            <SelectItem value="remote">Remote</SelectItem>
+            <SelectItem value="new york, ny">New York, NY</SelectItem>
+            <SelectItem value="san francisco, ca">San Francisco, CA</SelectItem>
+            <SelectItem value="bangalore">Bangalore</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+        <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full">
           <TabsTrigger value="recommended">Recommended</TabsTrigger>
           <TabsTrigger value="new">New Listings</TabsTrigger>
           <TabsTrigger value="applied">Applied</TabsTrigger>
           <TabsTrigger value="saved">Saved</TabsTrigger>
         </TabsList>
-        
-        <TabsContent value="recommended">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            {[
-              {
-                company: "TechFlow",
-                position: "Frontend Developer Intern",
-                location: "Remote",
-                type: "Part-time",
-                tags: ["React", "JavaScript", "UI/UX"],
-                deadline: "Aug 15, 2023",
-                logo: "T"
-              },
-              {
-                company: "DataViz Inc.",
-                position: "Data Science Intern",
-                location: "New York, NY",
-                type: "Full-time",
-                tags: ["Python", "Machine Learning", "SQL"],
-                deadline: "Aug 20, 2023",
-                logo: "D"
-              },
-              {
-                company: "CloudFusion",
-                position: "Full Stack Developer Intern",
-                location: "San Francisco, CA",
-                type: "Full-time",
-                tags: ["JavaScript", "Node.js", "React"],
-                deadline: "Aug 25, 2023",
-                logo: "C"
-              },
-              {
-                company: "MobileFirst",
-                position: "Mobile App Developer Intern",
-                location: "Remote",
-                type: "Part-time",
-                tags: ["React Native", "iOS", "Android"],
-                deadline: "Aug 30, 2023",
-                logo: "M"
-              }
-            ].map((internship, index) => (
-              <Card key={index} className="overflow-hidden">
-                <div className="p-6 flex gap-4">
-                  <div className="flex-none w-12 h-12 rounded bg-primary/10 text-primary flex items-center justify-center font-bold text-xl">
-                    {internship.logo}
+
+        {["recommended", "new", "applied", "saved"].map((tab) => (
+          <TabsContent key={tab} value={tab}>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+              {getTabContent(tab).length > 0 ? (
+                getTabContent(tab).map((internship) => (
+                  <Card
+                    key={internship._id}
+                    className="hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => setSelectedInternship(internship)}
+                  >
+                    <CardContent className="p-6 flex gap-4">
+                      <div className="flex-none w-12 h-12 rounded bg-primary/10 text-primary flex items-center justify-center font-bold text-xl">
+                        {internship.logo || internship.company.charAt(0)}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-medium">{internship.position}</h3>
+                        <p className="text-sm text-muted-foreground">{internship.company}</p>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            {internship.location}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            {internship.type}
+                          </Badge>
+                          {new Date(internship.postedAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) && (
+                            <Badge variant="secondary" className="text-xs">
+                              New
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                    <CardFooter className="flex justify-between items-center border-t bg-muted/30 px-6 py-3">
+                      <div className="text-xs">Apply by {new Date(internship.deadline).toLocaleDateString()}</div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSave(internship._id);
+                          }}
+                        >
+                          {savedInternships.includes(internship._id) ? 'Unsave' : 'Save'}
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleApply(internship._id);
+                          }}
+                          disabled={user && internship.applicants.includes(user._id)}
+                        >
+                          {user && internship.applicants.includes(user._id) ? 'Applied' : 'Apply'}
+                        </Button>
+                      </div>
+                    </CardFooter>
+                  </Card>
+                ))
+              ) : (
+                <div className="col-span-full py-12 text-center">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center mb-4">
+                    <Loader2 className="w-8 h-8 text-muted-foreground" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-medium">{internship.position}</h3>
-                    <p className="text-sm text-muted-foreground">{internship.company}</p>
+                  <h3 className="text-xl font-medium">No internships found</h3>
+                  <p className="text-muted-foreground mt-2 mb-4">
+                    {tab === "saved" ? "Save internships to view them here" :
+                      tab === "applied" ? "Apply to internships to track them here" :
+                        "Try adjusting your search filters"}
+                  </p>
+                  <Button variant="outline" onClick={() => {
+                    setSearchQuery("");
+                    setSelectedLocation("all");
+                  }}>
+                    Clear Filters
+                  </Button>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+        ))}
+      </Tabs>
+
+      <Dialog open={!!selectedInternship} onOpenChange={() => setSelectedInternship(null)}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden">
+          {selectedInternship && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedInternship.position}</DialogTitle>
+                <DialogDescription className="flex items-center gap-2">
+                  <span>{selectedInternship.company}</span>
+                  <span>•</span>
+                  <span>Posted {new Date(selectedInternship.postedAt).toLocaleDateString()}</span>
+                </DialogDescription>
+              </DialogHeader>
+              <ScrollArea className="h-[70vh] pr-4">
+                <div className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium">Location</p>
+                      <p className="text-sm">{selectedInternship.location}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Type</p>
+                      <p className="text-sm">{selectedInternship.type}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Duration</p>
+                      <p className="text-sm">{selectedInternship.duration}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Stipend</p>
+                      <p className="text-sm">{selectedInternship.stipend}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium">Description</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {selectedInternship.description}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium">Requirements</p>
                     <div className="flex flex-wrap gap-1 mt-2">
-                      <Badge variant="outline" className="text-xs">{internship.location}</Badge>
-                      <Badge variant="outline" className="text-xs">{internship.type}</Badge>
+                      {selectedInternship.tags.map((tag, i) => (
+                        <Badge key={i} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <div className="flex flex-col sm:flex-row justify-between gap-4">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Application Deadline</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(selectedInternship.deadline).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Button
+                        className="w-full sm:w-auto"
+                        onClick={() => {
+                          handleApply(selectedInternship._id);
+                        }}
+                        disabled={applying || (user && selectedInternship.applicants.includes(user._id))}
+                      >
+                        {user && selectedInternship.applicants.includes(user._id)
+                          ? 'Applied'
+                          : applying ? 'Applying...' : 'Apply Now'}
+                      </Button>
                     </div>
                   </div>
                 </div>
-                <div className="px-6 pb-2">
-                  <div className="flex flex-wrap gap-1">
-                    {internship.tags.map((tag, i) => (
-                      <Badge key={i} variant="secondary" className="text-xs">{tag}</Badge>
-                    ))}
-                  </div>
-                </div>
-                <CardFooter className="flex justify-between items-center border-t bg-muted/30 px-6 py-3">
-                  <div className="text-xs">Apply by {internship.deadline}</div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="ghost">Save</Button>
-                    <Button size="sm">Apply</Button>
-                  </div>
-                </CardFooter>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="new">
-          <div className="py-8 text-center">
-            <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-muted-foreground">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-medium">New listings coming soon</h3>
-            <p className="text-muted-foreground mt-2 mb-4">We're updating our internship database with fresh opportunities.</p>
-            <Button variant="outline">Notify me of new opportunities</Button>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="applied">
-          <div className="py-8 text-center">
-            <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-muted-foreground">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-medium">No applications yet</h3>
-            <p className="text-muted-foreground mt-2 mb-4">You haven't applied to any internships yet.</p>
-            <Button variant="outline">Browse opportunities</Button>
-          </div>
-        </TabsContent>
-        
-        <TabsContent value="saved">
-          <div className="py-8 text-center">
-            <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-muted-foreground">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0111.186 0z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-medium">No saved internships</h3>
-            <p className="text-muted-foreground mt-2 mb-4">Save internships to review them later.</p>
-            <Button variant="outline">Browse opportunities</Button>
-          </div>
-        </TabsContent>
-      </Tabs>
-      
+              </ScrollArea>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Card>
@@ -145,156 +343,92 @@ const Internships = () => {
               <CardDescription>Maximize your chances of landing your dream internship</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div>
-                <h3 className="text-lg font-medium mb-2">Perfect Your Resume</h3>
-                <p className="text-sm text-muted-foreground">
-                  Tailor your resume for each application, highlighting relevant skills and projects. Keep it concise and focused on achievements rather than responsibilities.
-                </p>
-                <ul className="list-disc pl-5 mt-2 text-sm space-y-1">
-                  <li>Use strong action verbs to describe your experiences</li>
-                  <li>Quantify your achievements whenever possible</li>
-                  <li>Include relevant technical skills and proficiency levels</li>
-                </ul>
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-medium mb-2">Build a Portfolio</h3>
-                <p className="text-sm text-muted-foreground">
-                  Create a polished online portfolio showcasing your best projects. Include detailed descriptions, the technologies used, and your specific contributions.
-                </p>
-                <div className="mt-2 p-3 bg-accent/50 rounded-md">
-                  <p className="text-sm font-medium">Pro Tip</p>
-                  <p className="text-xs text-muted-foreground">
-                    Include a link to your GitHub profile and make sure repositories are well-documented with descriptive README files.
+              <div className="space-y-4">
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <h3 className="text-lg font-medium mb-2">📄 Perfect Your Resume</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Tailor your resume for each application using keywords from the job description. Highlight relevant coursework, projects, and skills.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <h3 className="text-lg font-medium mb-2">💼 Build a Portfolio</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Create a professional portfolio website showcasing your best work. Include project descriptions, technologies used, and outcomes.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <h3 className="text-lg font-medium mb-2">💻 Technical Preparation</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Practice coding challenges on platforms like LeetCode. Review data structures and algorithms fundamentals.
                   </p>
                 </div>
               </div>
-              
-              <div>
-                <h3 className="text-lg font-medium mb-2">Ace the Technical Interview</h3>
-                <p className="text-sm text-muted-foreground">
-                  Practice coding challenges regularly and review fundamental computer science concepts. Be prepared to explain your thought process clearly.
-                </p>
-                <div className="grid grid-cols-2 gap-2 mt-2">
-                  <div className="p-2 bg-muted rounded-md">
-                    <p className="text-xs font-medium">Data Structures</p>
-                    <p className="text-xs text-muted-foreground">Arrays, linked lists, trees, graphs</p>
-                  </div>
-                  <div className="p-2 bg-muted rounded-md">
-                    <p className="text-xs font-medium">Algorithms</p>
-                    <p className="text-xs text-muted-foreground">Sorting, searching, dynamic programming</p>
-                  </div>
-                  <div className="p-2 bg-muted rounded-md">
-                    <p className="text-xs font-medium">System Design</p>
-                    <p className="text-xs text-muted-foreground">Basic architecture and design patterns</p>
-                  </div>
-                  <div className="p-2 bg-muted rounded-md">
-                    <p className="text-xs font-medium">Problem Solving</p>
-                    <p className="text-xs text-muted-foreground">Time/space complexity analysis</p>
-                  </div>
-                </div>
-              </div>
             </CardContent>
-            <CardFooter>
-              <Button variant="outline" className="w-full">Download Complete Guide</Button>
-            </CardFooter>
           </Card>
         </div>
-        
-        <div>
-          <Card className="mb-6">
+
+        <div className="space-y-6">
+          <Card>
             <CardHeader>
-              <CardTitle>Internship Stats</CardTitle>
-              <CardDescription>Based on our recent placements</CardDescription>
+              <CardTitle>Application Progress</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
                   <div className="flex justify-between text-sm mb-1">
-                    <span>Application to Interview Rate</span>
-                    <span className="font-medium">28%</span>
+                    <span>Applications Sent</span>
+                    <span className="font-medium">
+                      {internships.filter(i => user && i.applicants.includes(user._id)).length}
+                    </span>
                   </div>
                   <div className="w-full bg-secondary h-2 rounded-full">
-                    <div className="bg-primary h-2 rounded-full" style={{ width: '28%' }}></div>
+                    <div
+                      className="bg-primary h-2 rounded-full"
+                      style={{ width: `${internships.length > 0 ? (internships.filter(i => user && i.applicants.includes(user._id)).length / internships.length) * 100 : 0}%` }}
+                    ></div>
                   </div>
                 </div>
-                
-                <div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
                   <div className="flex justify-between text-sm mb-1">
-                    <span>Interview to Offer Rate</span>
-                    <span className="font-medium">42%</span>
+                    <span>Saved Internships</span>
+                    <span className="font-medium">{savedInternships.length}</span>
                   </div>
                   <div className="w-full bg-secondary h-2 rounded-full">
-                    <div className="bg-primary h-2 rounded-full" style={{ width: '42%' }}></div>
-                  </div>
-                </div>
-                
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Internship to Full-time Conversion</span>
-                    <span className="font-medium">63%</span>
-                  </div>
-                  <div className="w-full bg-secondary h-2 rounded-full">
-                    <div className="bg-primary h-2 rounded-full" style={{ width: '63%' }}></div>
-                  </div>
-                </div>
-                
-                <div className="pt-2 border-t">
-                  <h3 className="font-medium text-sm mb-2">Top Industries</h3>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-primary"></div>
-                      <span className="text-sm">Software Development (45%)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-primary/80"></div>
-                      <span className="text-sm">Data Science (28%)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-primary/60"></div>
-                      <span className="text-sm">Product Management (15%)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-primary/40"></div>
-                      <span className="text-sm">UX/UI Design (12%)</span>
-                    </div>
+                    <div
+                      className="bg-primary h-2 rounded-full"
+                      style={{ width: `${internships.length > 0 ? (savedInternships.length / internships.length) * 100 : 0}%` }}
+                    ></div>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
-              <CardTitle>Mock Interviews</CardTitle>
-              <CardDescription>Practice with industry experts</CardDescription>
+              <CardTitle>Upcoming Deadlines</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Prepare for technical interviews with real-world scenarios and expert feedback to improve your chances.
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  <Card className="border bg-muted/30">
-                    <CardContent className="p-3">
-                      <h4 className="font-medium text-sm">Technical</h4>
-                      <p className="text-xs text-muted-foreground">Coding & system design</p>
-                      <p className="text-sm font-bold mt-1">$49</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="border bg-muted/30">
-                    <CardContent className="p-3">
-                      <h4 className="font-medium text-sm">Behavioral</h4>
-                      <p className="text-xs text-muted-foreground">Soft skills & culture fit</p>
-                      <p className="text-sm font-bold mt-1">$39</p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
+            <CardContent className="space-y-4">
+              {internships
+                .filter(i => new Date(i.deadline) > new Date())
+                .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
+                .slice(0, 3)
+                .map((internship) => (
+                  <div key={internship._id} className="flex items-center justify-between p-2 hover:bg-muted/30 rounded">
+                    <div>
+                      <p className="text-sm font-medium">{internship.company}</p>
+                      <p className="text-xs text-muted-foreground">{internship.position}</p>
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {new Date(internship.deadline).toLocaleDateString()}
+                    </Badge>
+                  </div>
+                ))}
             </CardContent>
-            <CardFooter>
-              <Button className="w-full">Schedule a Mock Interview</Button>
-            </CardFooter>
           </Card>
         </div>
       </div>

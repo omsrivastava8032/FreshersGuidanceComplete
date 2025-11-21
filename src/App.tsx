@@ -1,6 +1,4 @@
-
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
@@ -10,6 +8,7 @@ import { lazy, Suspense } from "react";
 // Layout components
 import Layout from "./components/Layout";
 import LoadingScreen from "./components/LoadingScreen";
+import { RequireAuth } from "./components/RequireAuth";
 
 // Pages
 const Landing = lazy(() => import("./pages/Landing"));
@@ -24,33 +23,26 @@ const Guidance = lazy(() => import("./pages/Guidance"));
 const Internships = lazy(() => import("./pages/Internships"));
 const University = lazy(() => import("./pages/University"));
 const Payment = lazy(() => import("./pages/Payment"));
+const Admin = lazy(() => import("./pages/Admin"));
+const UserManagement = lazy(() => import("./pages/UserManagement"));
+const AdminSupport = lazy(() => import("./pages/AdminSupport"));
+const Support = lazy(() => import("./pages/Support"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
-// Protected route component
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  
-  if (loading) return <LoadingScreen />;
-  return user ? <>{children}</> : <Navigate to="/login" replace />;
-};
-
 // Premium route component
 const PremiumRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  
-  if (loading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/login" replace />;
-  return user.premium ? <>{children}</> : <Navigate to="/payment" replace />;
+  const { user } = useAuth();
+  return user?.premium ? <>{children}</> : <Navigate to="/payment" replace />;
 };
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
+        <Toaster position="bottom-right" />
+        
         <BrowserRouter>
           <Suspense fallback={<LoadingScreen />}>
             <Routes>
@@ -60,51 +52,81 @@ const App = () => (
               
               {/* Protected routes */}
               <Route path="/dashboard" element={
-                <ProtectedRoute>
+                <RequireAuth>
                   <Layout><Dashboard /></Layout>
-                </ProtectedRoute>
+                </RequireAuth>
               } />
               <Route path="/goals" element={
-                <ProtectedRoute>
+                <RequireAuth>
                   <Layout><Goals /></Layout>
-                </ProtectedRoute>
+                </RequireAuth>
               } />
               <Route path="/courses" element={
-                <ProtectedRoute>
+                <RequireAuth>
                   <Layout><Courses /></Layout>
-                </ProtectedRoute>
+                </RequireAuth>
               } />
               <Route path="/certificates" element={
-                <ProtectedRoute>
+                <RequireAuth>
                   <Layout><Certificates /></Layout>
-                </ProtectedRoute>
+                </RequireAuth>
               } />
               <Route path="/payment" element={
-                <ProtectedRoute>
+                <RequireAuth>
                   <Layout><Payment /></Layout>
-                </ProtectedRoute>
+                </RequireAuth>
+              } />
+              <Route path="/support" element={
+                <RequireAuth>
+                  <Layout><Support /></Layout>
+                </RequireAuth>
+              } />
+
+              {/* Admin routes */}
+              <Route path="/admin" element={
+                <RequireAuth role="admin">
+                  <Layout><Admin /></Layout>
+                </RequireAuth>
+              } />
+              <Route path="/admin/users" element={
+                <RequireAuth role="admin">
+                  <Layout><UserManagement /></Layout>
+                </RequireAuth>
+              } />
+              <Route path="/admin/support" element={
+                <RequireAuth role="admin">
+                  <Layout><AdminSupport /></Layout>
+                </RequireAuth>
               } />
               
               {/* Premium routes */}
               <Route path="/roadmap" element={
-                <PremiumRoute>
-                  <Layout><Roadmap /></Layout>
-                </PremiumRoute>
+                <RequireAuth>
+                  <PremiumRoute>
+                    <Layout><Roadmap /></Layout>
+                  </PremiumRoute>
+                </RequireAuth>
               } />
               <Route path="/guidance" element={
-                <PremiumRoute>
-                  <Layout><Guidance /></Layout>
-                </PremiumRoute>
+                <RequireAuth>
+                  <PremiumRoute>
+                    <Layout><Guidance /></Layout>
+                  </PremiumRoute>
+                </RequireAuth>
               } />
               <Route path="/internships" element={
-                <PremiumRoute>
-                  <Layout><Internships /></Layout>
-                </PremiumRoute>
+                <RequireAuth>
+                  <PremiumRoute>
+                    <Layout><Internships /></Layout>
+                  </PremiumRoute>
+                </RequireAuth>
               } />
               <Route path="/university" element={
-                <PremiumRoute>
-                  <Layout><University /></Layout>
-                </PremiumRoute>
+                <RequireAuth>
+                  <PremiumRoute>
+                    <Layout><University /></Layout>
+                  </PremiumRoute>
+                </RequireAuth>
               } />
               
               {/* Catch-all route */}

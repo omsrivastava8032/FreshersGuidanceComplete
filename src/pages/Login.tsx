@@ -41,7 +41,7 @@ export default function Login() {
         <div className="max-w-md w-full space-y-8 animate-fade-in">
           <div className="text-center">
             <Link to="/" className="inline-block mb-6">
-              <h2 className="text-2xl font-medium">Fresher Guidance</h2>
+              <h2 className="text-2xl font-medium">IT Career Guidance</h2>
             </Link>
             <h1 className="text-3xl font-medium tracking-tight">Welcome back</h1>
             <p className="mt-2 text-muted-foreground">Log in to your account to continue</p>

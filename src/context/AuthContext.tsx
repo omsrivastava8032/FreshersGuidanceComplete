@@ -1,20 +1,97 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { toast } from "sonner";
+import api from '@/lib/api';
 
-type User = {
+export type SupportTicket = {
   id: string;
-  email: string;
+  userId: string;
+  userEmail: string;
+  subject: string;
+  message: string;
+  status: 'open' | 'in_progress' | 'resolved';
+  createdAt: string;
+  updatedAt: string;
+  adminResponse?: string;
+};
+
+export type LearningGoal = {
+  id: string;
+  title: string;
+  description: string;
+  status: 'pending' | 'active' | 'completed' | 'rejected';
+  progress?: number;
+  createdAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+  targetDate?: string;
+  category: string;
+  priority: 'low' | 'medium' | 'high';
+  tasks: Array<{
+    id: string;
+    label: string;
+    checked: boolean;
+  }>;
+};
+
+export type Course = {
+  id: string;
+  title: string;
+  provider: string;
+  status: 'in_progress' | 'completed';
+  progress?: number;
+  startedAt: string;
+  completedAt?: string;
+};
+
+export type User = {
+  id: string;
   name: string;
+  email: string;
+  role: 'user' | 'admin';
   premium: boolean;
+  lastLogin?: string;
+  emailVerified: boolean;
+  createdAt: string;
+  // These arrays are now managed by their own components fetching from API
+  // Keeping them in type for now to avoid breaking changes, but they will be empty in context
+  goals: LearningGoal[];
+  learningGoals: LearningGoal[];
+  courses: Course[];
+  supportTickets: SupportTicket[];
+  class10Percentage?: string;
+  class12Percentage?: string;
+  board?: string;
+  branch?: string;
+  college?: string;
+  degree?: string;
+  preferences: {
+    notifications: boolean;
+    emailUpdates: boolean;
+    theme: string;
+  };
+  academicInfo: {
+    university: string;
+    major: string;
+    graduationYear: string;
+    gpa: string;
+  };
 };
 
 type AuthContextType = {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, academicDetails: {
+    class10Percentage: string;
+    class12Percentage: string;
+    board: string;
+    branch: string;
+    college: string;
+    degree: string;
+  }) => Promise<void>;
   logout: () => void;
   updateUserPremium: (premium: boolean) => void;
+  updateUserData: (updatedUser: User) => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -32,50 +109,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for user in local storage
-    const storedUser = localStorage.getItem('fresherguidance_user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-    setLoading(false);
-  }, []);
+    const checkAuth = async () => {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const { token } = JSON.parse(storedUser);
+          if (token) {
+            // Verify token and get latest user data
+            const { data } = await api.get('/auth/me');
+            // Map backend user to frontend user type
+            setUser({
+              ...data,
+              id: data._id,
+              goals: [], // These should be fetched by components
+              learningGoals: [],
+              courses: [],
+              supportTickets: []
+            });
+          }
+        } catch (error) {
+          console.error('Auth check failed:', error);
+          localStorage.removeItem('user');
+        }
+      }
+      setLoading(false);
+    };
 
-  const updateUser = (userData: User | null) => {
-    setUser(userData);
-    if (userData) {
-      localStorage.setItem('fresherguidance_user', JSON.stringify(userData));
-    } else {
-      localStorage.removeItem('fresherguidance_user');
-    }
-  };
+    checkAuth();
+  }, []);
 
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
-      // This is a mock implementation - in a real app, this would call an API
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      // Mock authentication logic - in a real app, this would verify credentials with a backend
-      if (email && password) {
-        // Mock successful login
-        const userData: User = {
-          id: 'user_' + Math.random().toString(36).substring(2, 9),
-          email,
-          name: email.split('@')[0],
-          premium: false,
-        };
-        
-        updateUser(userData);
-        toast.success("Login successful", {
-          description: `Welcome back, ${userData.name}!`,
-        });
-      } else {
-        throw new Error('Invalid credentials');
-      }
-    } catch (error) {
+      const { data } = await api.post('/auth/login', { email, password });
+
+      localStorage.setItem('user', JSON.stringify({ token: data.token }));
+
+      setUser({
+        ...data,
+        id: data._id,
+        goals: [],
+        learningGoals: [],
+        courses: [],
+        supportTickets: []
+      });
+
+      toast.success(`Welcome back, ${data.name}!`);
+    } catch (error: any) {
       toast.error("Login failed", {
-        description: error instanceof Error ? error.message : "Please check your credentials and try again",
+        description: error.response?.data?.message || "Invalid credentials",
       });
       throw error;
     } finally {
@@ -83,30 +165,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    academicDetails: {
+      class10Percentage: string;
+      class12Percentage: string;
+      board: string;
+      branch: string;
+      college: string;
+      degree: string;
+    }
+  ) => {
     setLoading(true);
     try {
-      // This is a mock implementation
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      if (name && email && password) {
-        const userData: User = {
-          id: 'user_' + Math.random().toString(36).substring(2, 9),
-          email,
-          name,
-          premium: false,
-        };
-        
-        updateUser(userData);
-        toast.success("Registration successful", {
-          description: `Welcome to Fresher Guidance, ${name}!`,
-        });
-      } else {
-        throw new Error('Please complete all fields');
-      }
-    } catch (error) {
+      const { data } = await api.post('/auth/register', {
+        name,
+        email,
+        password,
+        academicDetails
+      });
+
+      localStorage.setItem('user', JSON.stringify({ token: data.token }));
+
+      setUser({
+        ...data,
+        id: data._id,
+        goals: [],
+        learningGoals: [],
+        courses: [],
+        supportTickets: []
+      });
+
+      toast.success("Registration successful!", {
+        description: `Welcome ${name}, your account has been created`,
+      });
+    } catch (error: any) {
       toast.error("Registration failed", {
-        description: error instanceof Error ? error.message : "Please check your information and try again",
+        description: error.response?.data?.message || "Please check your information",
       });
       throw error;
     } finally {
@@ -115,16 +212,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    updateUser(null);
+    localStorage.removeItem('user');
+    setUser(null);
     toast.success("Logged out successfully");
   };
 
   const updateUserPremium = (premium: boolean) => {
+    // This should ideally call an API endpoint
     if (user) {
-      const updatedUser = { ...user, premium };
-      updateUser(updatedUser);
-      toast.success(premium ? "Premium features activated!" : "Premium status updated");
+      setUser({ ...user, premium });
+      toast.success(premium ? "🎉 Premium unlocked!" : "Premium status updated");
     }
+  };
+
+  const updateUserData = (updatedUser: User) => {
+    // This is kept for compatibility but should be replaced by specific API calls in components
+    setUser(updatedUser);
   };
 
   return (
@@ -136,6 +239,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         logout,
         updateUserPremium,
+        updateUserData
       }}
     >
       {children}

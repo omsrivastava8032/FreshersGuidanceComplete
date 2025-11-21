@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
@@ -11,7 +10,9 @@ import {
   Globe, 
   Menu, 
   X, 
-  ArrowDown 
+  ArrowDown,
+  Rocket,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 export default function Landing() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("hero");
+  const [isRocketVisible, setIsRocketVisible] = useState(false);
   const sectionsRef = useRef<Record<string, HTMLElement | null>>({});
   const navigate = useNavigate();
 
@@ -46,8 +48,14 @@ export default function Landing() {
       observer.observe(section);
     });
 
+    // Trigger rocket animation after a delay
+    const rocketTimer = setTimeout(() => {
+      setIsRocketVisible(true);
+    }, 1000);
+
     return () => {
       sections.forEach((section) => observer.unobserve(section));
+      clearTimeout(rocketTimer);
     };
   }, []);
 
@@ -71,7 +79,7 @@ export default function Landing() {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <span className="text-xl font-medium">Fresher Guidance</span>
+              <span className="text-xl font-medium">IT Career Guidance</span>
             </div>
 
             {/* Desktop Navigation */}
@@ -213,20 +221,20 @@ export default function Landing() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button 
                   size="lg" 
-                  className="h-14 px-8 text-lg"
+                  className="h-14 px-8 text-lg group"
                   onClick={() => navigate("/register")}
                 >
                   Start Your Journey
-                  <ChevronRight className="ml-2" />
+                  <ChevronRight className="ml-2 transition-transform group-hover:translate-x-1" />
                 </Button>
                 <Button 
                   variant="outline" 
                   size="lg" 
-                  className="h-14 px-8 text-lg"
+                  className="h-14 px-8 text-lg group"
                   onClick={() => scrollToSection("features")}
                 >
                   Learn More
-                  <ArrowDown className="ml-2 w-4 h-4" />
+                  <ArrowDown className="ml-2 w-4 h-4 transition-transform group-hover:translate-y-1" />
                 </Button>
               </div>
             </div>
@@ -237,6 +245,26 @@ export default function Landing() {
             <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
             <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full filter blur-3xl animate-pulse-subtle" />
             <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/5 rounded-full filter blur-3xl animate-pulse-subtle [animation-delay:1s]" />
+          </div>
+          
+          {/* Rocket Animation */}
+          <div className={cn(
+            "absolute bottom-0 left-1/2 transform -translate-x-1/2 transition-all duration-1000",
+            isRocketVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-20"
+          )}>
+            <div className="relative">
+              <Rocket className="w-16 h-16 text-primary animate-float" />
+              <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-4 h-8 bg-gradient-to-t from-primary/30 to-transparent rounded-b-full animate-flame" />
+              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-primary rounded-full animate-pulse" />
+            </div>
+          </div>
+          
+          {/* Floating Elements */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute top-1/3 left-1/4 w-4 h-4 bg-primary/20 rounded-full animate-float-slow [animation-delay:0.5s]" />
+            <div className="absolute top-1/2 right-1/3 w-6 h-6 bg-primary/10 rounded-full animate-float [animation-delay:1s]" />
+            <div className="absolute bottom-1/3 left-1/3 w-3 h-3 bg-primary/30 rounded-full animate-float-slow [animation-delay:1.5s]" />
+            <div className="absolute top-1/4 right-1/4 w-5 h-5 bg-primary/20 rounded-full animate-float [animation-delay:2s]" />
           </div>
         </section>
 
@@ -293,7 +321,7 @@ export default function Landing() {
                     "transition-all duration-300 hover:-translate-y-1"
                   )}
                 >
-                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                     <feature.icon className="w-6 h-6 text-primary" />
                   </div>
                   <h3 className="text-xl font-medium mb-2">{feature.title}</h3>
@@ -354,27 +382,70 @@ export default function Landing() {
                         <Button 
                           size="lg" 
                           onClick={() => navigate("/register")}
-                          className="bg-primary hover:bg-primary/90"
+                          className="bg-primary hover:bg-primary/90 group"
                         >
                           Get Premium Access
-                          <ChevronRight className="ml-2" />
+                          <ChevronRight className="ml-2 transition-transform group-hover:translate-x-1" />
                         </Button>
                         <p className="mt-4 text-sm text-muted-foreground">
                           Only $10/month - Cancel anytime
                         </p>
                       </div>
                     </div>
+                    {/* Free Features Section */}
                     <div className="lg:w-1/2">
-                      <div className="aspect-video rounded-lg bg-white/50 backdrop-blur flex items-center justify-center">
-                        <p className="text-lg text-center p-8">
-                          Premium features visualization placeholder
-                        </p>
+                      <div className="p-6 bg-white/50 backdrop-blur rounded-lg">
+                        <h3 className="text-xl font-medium mb-6 text-center">
+                          Free Tier Benefits
+                        </h3>
+                        <div className="grid gap-6">
+                          {[
+                            {
+                              icon: Compass,
+                              title: "Basic Career Roadmap",
+                              description: "General career path recommendations based on your field"
+                            },
+                            {
+                              icon: Award,
+                              title: "Skill Assessment",
+                              description: "Basic skills evaluation and improvement suggestions"
+                            },
+                            {
+                              icon: Globe,
+                              title: "Community Support",
+                              description: "Access to student forums and discussion groups"
+                            },
+                            {
+                              icon: Briefcase,
+                              title: "Job Listings",
+                              description: "Curated entry-level job opportunities"
+                            }
+                          ].map((feature, index) => (
+                            <div key={index} className="flex items-start gap-4">
+                              <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <feature.icon className="w-4 h-4 text-primary" />
+                              </div>
+                              <div>
+                                <h4 className="font-medium">{feature.title}</h4>
+                                <p className="text-sm text-muted-foreground">
+                                  {feature.description}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
+          
+          {/* Animated background elements */}
+          <div className="absolute inset-0 -z-10 overflow-hidden">
+            <div className="absolute top-1/4 right-1/4 w-64 h-64 bg-primary/5 rounded-full filter blur-3xl animate-pulse-subtle [animation-delay:0.5s]" />
+            <div className="absolute bottom-1/3 left-1/3 w-80 h-80 bg-primary/10 rounded-full filter blur-3xl animate-pulse-subtle [animation-delay:1.5s]" />
           </div>
         </section>
 
@@ -387,7 +458,7 @@ export default function Landing() {
             <div className="text-center mb-16">
               <h2 className="text-3xl sm:text-4xl font-medium mb-4">Success Stories</h2>
               <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                See how Fresher Guidance has helped students achieve their career goals.
+                See how IT Career Guidance has helped students achieve their career goals.
               </p>
             </div>
 
@@ -478,7 +549,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
-            <p>&copy; {new Date().getFullYear()} Fresher Guidance. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} IT Career Guidance. All rights reserved.</p>
           </div>
         </div>
       </footer>
