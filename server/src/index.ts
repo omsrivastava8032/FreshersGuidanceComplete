@@ -16,7 +16,15 @@ connectDB();
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: [
+        'http://localhost:8080',
+        'http://localhost:5173',
+        'https://freshers-guidance-complete-3ygp29dh8.vercel.app',
+        'https://freshers-guidance-complete.vercel.app'
+    ],
+    credentials: true
+}));
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
