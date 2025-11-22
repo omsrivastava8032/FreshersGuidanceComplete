@@ -24,7 +24,7 @@ export const chatWithGemini = async (req: Request, res: Response) => {
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+        const model = genAI.getGenerativeModel({ model: 'gemini-flash-latest' });
 
         const prompt = `
         You are a helpful, encouraging, and knowledgeable Career Mentor for university students and freshers.
