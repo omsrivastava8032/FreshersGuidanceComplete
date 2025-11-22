@@ -50,21 +50,4 @@ export const chatWithGemini = async (req: Request, res: Response) => {
     }
 };
 
-// @desc    List available Gemini models (Debug)
-// @route   GET /api/ai/debug
-// @access  Public
-export const listModels = async (req: Request, res: Response) => {
-    if (!process.env.GEMINI_API_KEY) {
-        res.status(500).json({ message: 'Gemini API Key is not configured' });
-        return;
-    }
 
-    try {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`);
-        const data = await response.json();
-        res.json(data);
-    } catch (error) {
-        console.error('Model List Error:', error);
-        res.status(500).json({ message: 'Failed to list models', error });
-    }
-};
