@@ -1,21 +1,22 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { 
-  Laptop, 
-  GraduationCap, 
-  Award, 
-  MapPin, 
-  Video, 
-  Briefcase, 
-  Globe, 
-  LogOut, 
-  Crown, 
-  Menu, 
+import {
+  Laptop,
+  GraduationCap,
+  Award,
+  MapPin,
+  Video,
+  Briefcase,
+  Globe,
+  LogOut,
+  Crown,
+  Menu,
   User,
   Shield,
   Users,
-  HelpCircle
+  HelpCircle,
+  Bot
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -36,6 +37,7 @@ const userNavItems: NavItem[] = [
   { label: 'Mentorship', href: '/guidance', icon: Video, premium: true },
   { label: 'Internships', href: '/internships', icon: Briefcase, premium: true },
   { label: 'University Programs', href: '/university', icon: Globe, premium: true },
+  { label: 'AI Career Mentor', href: '/mentor', icon: Bot, premium: true },
   { label: 'Support', href: '/support', icon: HelpCircle },
 ];
 
@@ -70,16 +72,16 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-     
-      
+
+
       {isSidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/20 backdrop-blur-sm z-20 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
-      
-      <aside 
+
+      <aside
         className={cn(
           "fixed inset-y-0 left-0 z-30 w-64 transform bg-white/90 backdrop-blur-lg",
           "border-r border-border shadow-subtle transition-transform duration-300 ease-in-out",
@@ -91,7 +93,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center h-16 px-6 border-b">
             <span className="text-xl font-medium">IT Career Guidance</span>
           </div>
-          
+
           <nav className="flex-1 overflow-y-auto py-4">
             <ul className="space-y-1 px-3">
               {navItems.map((item) => (
@@ -114,7 +116,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               ))}
             </ul>
           </nav>
-          
+
           <div className="p-4 border-t">
             <Button
               variant="ghost"
@@ -127,13 +129,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </aside>
-      
+
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="h-16 flex items-center justify-between px-6 border-b bg-white/80 backdrop-blur-sm">
           <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="lg:hidden"
               onClick={() => setIsSidebarOpen(true)}
             >
@@ -143,7 +145,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               {navItems.find(item => item.href === location.pathname)?.label || 'Dashboard'}
             </h1>
           </div>
-          
+
           <div className="flex items-center gap-4">
             {user?.role === 'admin' ? (
               <div className="flex items-center text-blue-500 gap-1 px-3 py-1 bg-blue-50 rounded-full text-sm">
@@ -156,8 +158,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <span className="font-medium">Premium</span>
               </div>
             ) : (
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 className="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
                 onClick={() => navigate('/payment')}
               >
@@ -165,7 +167,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 Go Premium
               </Button>
             )}
-            
+
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -176,9 +178,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                 </div>
               </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="hover:bg-secondary"
                 onClick={() => logout()}
               >
@@ -187,7 +189,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             </div>
           </div>
         </header>
-        
+
         <main className={cn(
           "flex-1 overflow-y-auto p-6 transition-opacity duration-300",
           pageTransitioning ? "opacity-0" : "opacity-100"

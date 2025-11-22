@@ -27,6 +27,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const UserManagement = lazy(() => import("./pages/UserManagement"));
 const AdminSupport = lazy(() => import("./pages/AdminSupport"));
 const Support = lazy(() => import("./pages/Support"));
+const Mentor = lazy(() => import("./pages/Mentor"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -42,14 +43,14 @@ const App = () => (
     <AuthProvider>
       <TooltipProvider>
         <Toaster position="bottom-right" />
-        
+
         <BrowserRouter>
           <Suspense fallback={<LoadingScreen />}>
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              
+
               {/* Protected routes */}
               <Route path="/dashboard" element={
                 <RequireAuth>
@@ -81,6 +82,11 @@ const App = () => (
                   <Layout><Support /></Layout>
                 </RequireAuth>
               } />
+              <Route path="/mentor" element={
+                <RequireAuth>
+                  <Layout><Mentor /></Layout>
+                </RequireAuth>
+              } />
 
               {/* Admin routes */}
               <Route path="/admin" element={
@@ -98,7 +104,7 @@ const App = () => (
                   <Layout><AdminSupport /></Layout>
                 </RequireAuth>
               } />
-              
+
               {/* Premium routes */}
               <Route path="/roadmap" element={
                 <RequireAuth>
@@ -128,7 +134,7 @@ const App = () => (
                   </PremiumRoute>
                 </RequireAuth>
               } />
-              
+
               {/* Catch-all route */}
               <Route path="*" element={<NotFound />} />
             </Routes>

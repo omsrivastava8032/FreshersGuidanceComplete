@@ -2,12 +2,42 @@ import { Request, Response } from 'express';
 import Internship from '../models/Internship';
 import User from '../models/User';
 
-// @desc    Get all internships
+// @desc    Get all internships with filtering and pagination
 // @route   GET /api/internships
 // @access  Private
 export const getInternships = async (req: Request, res: Response) => {
-    const internships = await Internship.find({}).sort({ createdAt: -1 });
-    res.json(internships);
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const keyword = req.query.search
+        ? {
+            $or: [
+                { company: { $regex: req.query.search, $options: 'i' } },
+                { position: { $regex: req.query.search, $options: 'i' } },
+                { tags: { $regex: req.query.search, $options: 'i' } },
+            ],
+        }
+        : {};
+
+    const locationFilter = req.query.location && req.query.location !== 'all'
+        ? { location: { $regex: req.query.location, $options: 'i' } }
+        : {};
+
+    const query = { ...keyword, ...locationFilter };
+
+    const count = await Internship.countDocuments(query);
+    const internships = await Internship.find(query)
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .skip(skip);
+
+    res.json({
+        internships,
+        page,
+        pages: Math.ceil(count / limit),
+        total: count,
+    });
 };
 
 // @desc    Get internship by ID

@@ -1,6 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import connectDB from './config/db';
 
 import authRoutes from './routes/authRoutes';
@@ -10,6 +12,7 @@ import supportRoutes from './routes/supportRoutes';
 import userRoutes from './routes/userRoutes';
 import internshipRoutes from './routes/internshipRoutes';
 import courseCatalogRoutes from './routes/courseCatalogRoutes';
+import aiRoutes from './routes/aiRoutes';
 
 dotenv.config();
 
@@ -17,10 +20,24 @@ connectDB();
 
 const app = express();
 
+// Security Middleware
+app.use(helmet());
+
+// Rate Limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    message: 'Too many requests from this IP, please try again after 15 minutes'
+});
+
+// Apply rate limiting to all requests
+app.use(limiter);
+
 app.use(cors({
     origin: [
         'http://localhost:8080',
-        'http://localhost:5173',
         'https://freshers-guidance-complete-3ygp29dh8.vercel.app',
         'https://freshers-guidance-complete.vercel.app'
     ],
@@ -35,6 +52,7 @@ app.use('/api/courses', courseCatalogRoutes); // Mount under /api/courses so it 
 app.use('/api/support', supportRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/internships', internshipRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.get('/', (req, res) => {
     res.send('API is running...');
