@@ -1,0 +1,122 @@
+export const courses = [
+    {
+        id: 1,
+        title: "The Complete Modern JavaScript Course",
+        description: "Master ES6+ features and modern JS concepts",
+        duration: "6 weeks",
+        instructor: "Packt Instructors",
+        rating: 4.7,
+        reviews: 3560,
+        url: "https://www.coursera.org/specializations/packt-the-complete-modern-javascript-course-with-es6",
+        level: "beginner",
+        category: "Web Development"
+    },
+    {
+        id: 2,
+        title: "Complete ReactJS Masterclass",
+        description: "Build modern web applications with React from scratch",
+        duration: "8 weeks",
+        instructor: "Eduonix Team",
+        rating: 4.6,
+        reviews: 8924,
+        url: "https://www.udemy.com/course/complete-reactjs-masterclass/",
+        level: "intermediate",
+        category: "Web Development"
+    },
+    {
+        id: 3,
+        title: "Machine Learning Specialization",
+        description: "Introduction to ML concepts and algorithms",
+        duration: "12 weeks",
+        instructor: "Andrew Ng",
+        rating: 4.9,
+        reviews: 45230,
+        url: "https://www.coursera.org/specializations/machine-learning-introduction",
+        level: "advanced",
+        category: "Data Science"
+    },
+    {
+        id: 4,
+        title: "Data Visualization with Microsoft",
+        description: "Master data presentation techniques",
+        duration: "6 weeks",
+        instructor: "Microsoft Experts",
+        rating: 4.5,
+        reviews: 8912,
+        url: "https://www.coursera.org/professional-certificates/microsoft-data-visualization",
+        level: "intermediate",
+        category: "Data Science"
+    },
+    {
+        id: 5,
+        title: "Google Cybersecurity Professional Certificate",
+        description: "Launch your career in cybersecurity",
+        duration: "6 months",
+        instructor: "Google",
+        rating: 4.8,
+        reviews: 14567,
+        url: "https://www.coursera.org/professional-certificates/google-cybersecurity",
+        level: "beginner",
+        category: "Cybersecurity"
+    },
+    {
+        id: 6,
+        title: "Ethical Hacking Fundamentals",
+        description: "Learn penetration testing and vulnerability assessment",
+        duration: "8 weeks",
+        instructor: "EC-Council",
+        rating: 4.7,
+        reviews: 9214,
+        url: "https://www.eccouncil.org/programs/certified-ethical-hacker-ceh/",
+        level: "intermediate",
+        category: "Cybersecurity"
+    },
+    {
+        id: 7,
+        title: "Android Development with Kotlin",
+        description: "Build professional Android apps using Kotlin",
+        duration: "9 weeks",
+        instructor: "Google Developers",
+        rating: 4.8,
+        reviews: 23456,
+        url: "https://www.udacity.com/course/android-kotlin-developer-nanodegree--nd940",
+        level: "intermediate",
+        category: "Android App Development"
+    },
+    {
+        id: 8,
+        title: "Advanced Android Architecture",
+        description: "Master MVVM, Clean Architecture, and testing",
+        duration: "6 weeks",
+        instructor: "Android Team",
+        rating: 4.9,
+        reviews: 6789,
+        url: "https://developer.android.com/courses",
+        level: "advanced",
+        category: "Android App Development"
+    },
+    {
+        id: 9,
+        title: "AWS Fundamentals",
+        description: "Master core AWS services and cloud concepts",
+        duration: "6 weeks",
+        instructor: "Amazon Web Services",
+        rating: 4.8,
+        reviews: 23456,
+        url: "https://www.coursera.org/specializations/aws-fundamentals",
+        level: "intermediate",
+        category: "Cloud Computing"
+    },
+    {
+        id: 10,
+        title: "Azure Cloud Architecture",
+        description: "Design and implement cloud solutions",
+        duration: "8 weeks",
+        instructor: "Microsoft Learn",
+        rating: 4.7,
+        reviews: 15632,
+        url: "https://learn.microsoft.com/en-us/training/azure/",
+        level: "advanced",
+        category: "Cloud Computing"
+    }
+];

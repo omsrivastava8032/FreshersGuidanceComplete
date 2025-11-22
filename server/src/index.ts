@@ -9,6 +9,7 @@ import courseRoutes from './routes/courseRoutes';
 import supportRoutes from './routes/supportRoutes';
 import userRoutes from './routes/userRoutes';
 import internshipRoutes from './routes/internshipRoutes';
+import courseCatalogRoutes from './routes/courseCatalogRoutes';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/goals', goalRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/courses', courseCatalogRoutes); // Mount under /api/courses so it becomes /api/courses/catalog
 app.use('/api/support', supportRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/internships', internshipRoutes);
